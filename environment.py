@@ -11,6 +11,7 @@ class MultiActionEnvironment():
     #   given starting enemy health, and given starting locations
     def __init__(self, size=20, enemy_starting_health=15, agent_starting_health=15, agent_type=0, enemy_location=(0,10), agent_location=(10,10)):
         self.enemy_health = enemy_starting_health
+        self.enemy_starting_health = enemy_starting_health
         self.agent_health = agent_starting_health
         self.enemy_AC = ENEMY_AC
         self.agent_AC = 16 if agent_type == 0 else 14
@@ -32,7 +33,19 @@ class MultiActionEnvironment():
         # takes in agent action, and adjusts state accordingly
         # if action is not legal, nothing happens
         # returns the next state information (including available actions and distance to enemy), the reward for that state, and whether the game has ended
-        return 
+        self.resolveActions(action)
+        damaged = 1 if self.enemy_health <= self.enemy_starting_health/2 else 0
+        observerations = [self.agent_location, self.getActions(), self.enemyDistance(), self.agent_health, damaged]
+        done = False
+        if self.agent_health <= 0:
+            self.current_reward -= 10
+            done = True
+        elif self.enemy_health <= 0:
+            self.current_reward += 10
+            done = True
+        rewards = self.current_reward
+        self.current_reward = 0
+        return (observerations, rewards, done)
 
 
     # get enemy action, determines the enemy's moves after player has finished.
@@ -41,14 +54,12 @@ class MultiActionEnvironment():
         speed = AGENT_MOVEMENT_SPEED
         if self.in_melee:
             self.resolveEnemyAttack()
-            self.turn = 0
         else:
             while speed > 0:
                 currDist = self.enemyDistance()
                 if currDist < 2:
                     self.in_melee = True
                     self.resolveEnemyAttack()
-                    self.turn = 0
                     speed = 0
                 dists = []
                 up = (self.enemy_location[0], self.enemy_location[1]+1)
@@ -62,7 +73,14 @@ class MultiActionEnvironment():
                 dists.append(self.enemyDistance(self.agent_location, left))
                 self.enemy_location = actions[dists.index(min(dists))]
                 speed -= 1
+            self.endEnemyTurn()
         return
+
+    def endEnemyTurn(self):
+        self.turn = 0
+        self.dodging = False
+        self.disengaged = False
+        self.acted = False
 
     # enemy attack resolves
     def resolveEnemyAttack(self):
@@ -74,6 +92,7 @@ class MultiActionEnvironment():
         if attackRoll > self.agent_AC:
             damageRoll = rand.randint(1,12)+3
             self.agent_health -= damageRoll
+        self.endEnemyTurn()
         return
 
     # resolves actions that the agent chooses, calls specific agent actions if they are chosen
@@ -160,7 +179,7 @@ class MultiActionEnvironment():
                 return self.resolveMeleeActions(action)
             elif self.agent_type == 1:
                 return self.resolveRangedActions(action)
-            else
+            else:
                 return "Unknown Agent Type"
         return "Unexpected Action Taken"
 
