@@ -4,6 +4,7 @@ import numpy as np
 import random
 from reinforceAgent import Reinforce
 from torch import optim
+from environment import MultiActionEnvironment
 
 BATCHSIZE = 10
 
@@ -13,11 +14,13 @@ def calculateReturn(rewards, discount=0.9):
     discounted = discounted[::-1].cumsum()[::-1]
     return discounted - discounted.mean()
 
-env = gym.make('CartPole-v0')
+# Melee Character
+env = MultiActionEnvironment(size=20, enemy_starting_health=13, agent_starting_health=21, agent_type=0, enemy_location=[0,10], agent_location=[10,10])
+# Ranged Character
+#env = MultiActionEnvironment(size=20, enemy_starting_health=13, agent_starting_health=18, agent_type=1, enemy_location=[0,10], agent_location=[10,10])
 
 
-
-agent = Reinforce(env.observation_space.shape[0], env.action_space.n)
+agent = Reinforce(env.observation_size, env.action_size)
 
 totalReward = []
 bRewards = []
@@ -35,7 +38,7 @@ for episode in range(2000):
     while not done:
         #env.render()
         nextAction = agent.chooseAction(currState)
-        nextState, reward, done, info = env.step(nextAction)
+        nextState, reward, done = env.step(nextAction)
         statesVisited.append(currState)
         episodeRewards.append(reward)
         actionsTaken.append(nextAction)
@@ -76,13 +79,13 @@ plt.ylabel('Total Rewards')
 plt.xlabel('Episodes')
 plt.show()
 
-env = gym.make('CartPole-v0')
+
 currState = env.reset()
 done = False
 while not done:
-    env.render()
+    env.render = True
+    env.print()
     nextAction = agent.chooseAction(currState)
-    nextState, reward, done, info = env.step(nextAction)
+    nextState, reward, done = env.step(nextAction)
     currState = nextState
     
-env.close()

@@ -3,7 +3,7 @@ import torch
 from torch import nn, optim
 
 LEARNINGRATE = 0.01
-NODES = 16
+NODES = 32
 
 class Reinforce():
 
@@ -14,7 +14,6 @@ class Reinforce():
         self.actions = np.arange(envActionSpace)
         # we initialize the network. 
         self.network = nn.Sequential(
-            
             nn.Linear(self.inputs, nodes),
             nn.ReLU(),
             nn.Linear(nodes, nodes),
